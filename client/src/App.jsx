@@ -1,10 +1,13 @@
 import { useState, useEffect, useCallback } from 'react';
 import InteractiveGlobe from './components/Globe';
 import UserModal from './components/UserModal';
+import IntroAnimation from './components/IntroAnimation';
 import { fetchNotePoints, createNote } from './api/notes';
 import './App.css';
 
 function App() {
+  const [showIntro, setShowIntro] = useState(true);
+  const [appReady, setAppReady] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [pins, setPins] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -62,36 +65,46 @@ function App() {
     console.log('Pin clicked:', pin);
   };
 
+  const handleIntroComplete = useCallback(() => {
+    setShowIntro(false);
+    // Small delay before showing the app content with animation
+    setTimeout(() => setAppReady(true), 100);
+  }, []);
+
   return (
-    <div className="app">
-      {error && (
-        <div className="error-banner">
-          {error}
-          <button onClick={() => setError(null)}>×</button>
-        </div>
-      )}
+    <>
+      {showIntro && <IntroAnimation onComplete={handleIntroComplete} />}
 
-      <button
-        className="add-pin-btn"
-        onClick={() => setIsModalOpen(true)}
-        aria-label="Add your pin"
-      >
-        <span className="btn-icon">+</span>
-        <span className="btn-text">Add Pin</span>
-      </button>
+      <div className={`app ${appReady ? 'app-ready' : 'app-hidden'}`}>
+        {error && (
+          <div className="error-banner">
+            {error}
+            <button onClick={() => setError(null)}>×</button>
+          </div>
+        )}
 
-      {isLoading && pins.length === 0 && (
-        <div className="loading-indicator">Loading...</div>
-      )}
+        <button
+          className={`add-pin-btn ${appReady ? 'btn-visible' : ''}`}
+          onClick={() => setIsModalOpen(true)}
+          aria-label="Add your pin"
+        >
+          <span className="btn-icon">+</span>
+          <span className="btn-text">Add Pin</span>
+        </button>
 
-      <InteractiveGlobe pins={pins} onPinClick={handlePinClick} />
+        {isLoading && pins.length === 0 && (
+          <div className="loading-indicator">Loading...</div>
+        )}
 
-      <UserModal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        onConfirm={handleAddPin}
-      />
-    </div>
+        <InteractiveGlobe pins={pins} onPinClick={handlePinClick} />
+
+        <UserModal
+          isOpen={isModalOpen}
+          onClose={() => setIsModalOpen(false)}
+          onConfirm={handleAddPin}
+        />
+      </div>
+    </>
   );
 }
 
