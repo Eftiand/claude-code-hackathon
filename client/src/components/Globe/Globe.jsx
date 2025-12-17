@@ -1,4 +1,4 @@
-import { useRef, useEffect, useState, useMemo } from 'react';
+import { useRef, useEffect, useState, useMemo, useCallback } from 'react';
 import Globe from 'react-globe.gl';
 import * as THREE from 'three';
 import './Globe.css';
@@ -7,7 +7,7 @@ function InteractiveGlobe({ pins = [] }) {
   const globeRef = useRef();
   const [countries, setCountries] = useState({ features: [] });
 
-  // Blue water material for globe
+  // Globe material
   const globeMaterial = useMemo(() => {
     return new THREE.MeshPhongMaterial({
       color: '#000000',
@@ -25,10 +25,9 @@ function InteractiveGlobe({ pins = [] }) {
 
   useEffect(() => {
     if (globeRef.current) {
-      // Configure auto-rotation
+      // Disable auto-rotation
       const controls = globeRef.current.controls();
-      controls.autoRotate = true;
-      controls.autoRotateSpeed = 0.3;
+      controls.autoRotate = false;
 
       // Set initial camera position
       globeRef.current.pointOfView({
@@ -39,27 +38,42 @@ function InteractiveGlobe({ pins = [] }) {
     }
   }, []);
 
-  // Create candle HTML element for each pin
-  const candleElement = useMemo(() => {
-    return (d) => {
-      const el = document.createElement('div');
-      el.className = 'candle-container';
-      const height = 20 + (d.size || 1) * 15;
-      const flameColor = d.color || '#ff9500';
+  // Convert size to weight for heatmap intensity (0-1 range)
+  const getWeight = useCallback((d) => {
+    const size = d.size || 1;
+    // Normalize size to 0-1 range, assuming size is typically 1-5
+    return Math.min(1, Math.max(0.2, size / 5));
+  }, []);
 
-      el.innerHTML = `
-        <div class="candle" style="height: ${height}px;">
-          <div class="flame" style="--flame-color: ${flameColor};">
-            <div class="flame-inner"></div>
-            <div class="flame-outer"></div>
-            <div class="glow" style="--glow-color: ${flameColor};"></div>
-          </div>
-          <div class="wick"></div>
-          <div class="wax"></div>
-        </div>
-      `;
-      return el;
-    };
+  // Heatmap color interpolation function
+  const heatmapColorFn = useCallback((d) => {
+    const weight = getWeight(d);
+    // Interpolate from blue (cold) through green/yellow to red (hot)
+    if (weight < 0.33) {
+      // Blue to cyan
+      const t = weight / 0.33;
+      return `rgba(0, ${Math.round(150 + 105 * t)}, ${Math.round(255 - 55 * t)}, 0.9)`;
+    } else if (weight < 0.66) {
+      // Cyan to yellow
+      const t = (weight - 0.33) / 0.33;
+      return `rgba(${Math.round(255 * t)}, 255, ${Math.round(200 * (1 - t))}, 0.9)`;
+    } else {
+      // Yellow to red
+      const t = (weight - 0.66) / 0.34;
+      return `rgba(255, ${Math.round(255 * (1 - t))}, 0, 0.9)`;
+    }
+  }, [getWeight]);
+
+  // Point altitude based on intensity
+  const getPointAltitude = useCallback((d) => {
+    const size = d.size || 1;
+    return 0.01 + (size / 5) * 0.05;
+  }, []);
+
+  // Point radius based on size
+  const getPointRadius = useCallback((d) => {
+    const size = d.size || 1;
+    return 0.3 + size * 0.4;
   }, []);
 
   return (
@@ -73,31 +87,34 @@ function InteractiveGlobe({ pins = [] }) {
         showAtmosphere={true}
         atmosphereColor="#ffffff"
         atmosphereAltitude={0.15}
-        // Country polygons with cyan outline style
+        // Country polygons with outline style
         polygonsData={countries.features}
         polygonCapColor={() => '#1a1a1a'}
         polygonSideColor={() => '#000000'}
         polygonStrokeColor={() => '#ffffff'}
         polygonAltitude={0.008}
-        // Light candles using HTML elements
-        htmlElementsData={pins}
-        htmlLat={d => d.lat}
-        htmlLng={d => d.lng}
-        htmlAltitude={0.02}
-        htmlElement={candleElement}
-        htmlLabel={d => d.label ? `
+        // Heatmap points
+        pointsData={pins}
+        pointLat={d => d.lat}
+        pointLng={d => d.lng}
+        pointAltitude={getPointAltitude}
+        pointRadius={getPointRadius}
+        pointColor={heatmapColorFn}
+        pointsMerge={false}
+        pointLabel={d => d.label ? `
           <div style="
             background: rgba(0, 10, 20, 0.9);
-            border: 1px solid ${d.color || '#ff9500'};
+            border: 1px solid ${heatmapColorFn(d)};
             border-radius: 4px;
             padding: 8px 12px;
             font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
             font-size: 12px;
-            color: ${d.color || '#ff9500'};
-            box-shadow: 0 0 20px ${d.color || '#ff9500'}40;
+            color: ${heatmapColorFn(d)};
+            box-shadow: 0 0 20px ${heatmapColorFn(d)}40;
           ">
             <div style="font-weight: bold;">${d.label}</div>
             ${d.description ? `<div style="opacity: 0.7; margin-top: 4px;">${d.description}</div>` : ''}
+            <div style="opacity: 0.6; margin-top: 4px; font-size: 10px;">Intensity: ${((d.size || 1) / 5 * 100).toFixed(0)}%</div>
           </div>
         ` : null}
         animateIn={true}
