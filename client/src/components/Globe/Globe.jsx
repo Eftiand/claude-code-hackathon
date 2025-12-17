@@ -38,42 +38,110 @@ function InteractiveGlobe({ pins = [], onPinClick }) {
     }
   }, []);
 
-  // Convert size to weight for heatmap intensity (0-1 range)
-  const getWeight = useCallback((d) => {
-    const size = d.size || 1;
-    // Normalize size to 0-1 range, assuming size is typically 1-5
-    return Math.min(1, Math.max(0.2, size / 5));
-  }, []);
+  // Create a candle with flame as a THREE.js object
+  const createCandle = useCallback((d) => {
+    const group = new THREE.Group();
+    const scale = 0.5;
 
-  // Heatmap color interpolation function
-  const heatmapColorFn = useCallback((d) => {
-    const weight = getWeight(d);
-    // Interpolate from blue (cold) through green/yellow to red (hot)
-    if (weight < 0.33) {
-      // Blue to cyan
-      const t = weight / 0.33;
-      return `rgba(0, ${Math.round(150 + 105 * t)}, ${Math.round(255 - 55 * t)}, 0.9)`;
-    } else if (weight < 0.66) {
-      // Cyan to yellow
-      const t = (weight - 0.33) / 0.33;
-      return `rgba(${Math.round(255 * t)}, 255, ${Math.round(200 * (1 - t))}, 0.9)`;
-    } else {
-      // Yellow to red
-      const t = (weight - 0.66) / 0.34;
-      return `rgba(255, ${Math.round(255 * (1 - t))}, 0, 0.9)`;
-    }
-  }, [getWeight]);
+    // Ping ring at base (glowing circle on the ground)
+    const ringGeometry = new THREE.RingGeometry(0.8 * scale, 1.2 * scale, 32);
+    const ringMaterial = new THREE.MeshBasicMaterial({
+      color: '#ff6600',
+      transparent: true,
+      opacity: 0.6,
+      side: THREE.DoubleSide,
+    });
+    const ring = new THREE.Mesh(ringGeometry, ringMaterial);
+    ring.rotation.x = -Math.PI / 2;
+    ring.position.y = 0.01;
+    group.add(ring);
 
-  // Point altitude based on intensity
-  const getPointAltitude = useCallback((d) => {
-    const size = d.size || 1;
-    return 0.01 + (size / 5) * 0.05;
-  }, []);
+    // Outer ping ring (larger, softer)
+    const outerRingGeometry = new THREE.RingGeometry(1.2 * scale, 1.8 * scale, 32);
+    const outerRingMaterial = new THREE.MeshBasicMaterial({
+      color: '#ff4400',
+      transparent: true,
+      opacity: 0.3,
+      side: THREE.DoubleSide,
+    });
+    const outerRing = new THREE.Mesh(outerRingGeometry, outerRingMaterial);
+    outerRing.rotation.x = -Math.PI / 2;
+    outerRing.position.y = 0.005;
+    group.add(outerRing);
 
-  // Point radius based on size
-  const getPointRadius = useCallback((d) => {
-    const size = d.size || 1;
-    return 0.3 + size * 0.4;
+    // Candle body (cylinder) - cream/white color with warm glow
+    const candleGeometry = new THREE.CylinderGeometry(0.3 * scale, 0.35 * scale, 2 * scale, 12);
+    const candleMaterial = new THREE.MeshStandardMaterial({
+      color: '#f5f0e0',
+      emissive: '#ff6633',
+      emissiveIntensity: 0.2,
+    });
+    const candle = new THREE.Mesh(candleGeometry, candleMaterial);
+    candle.position.y = 1 * scale;
+    group.add(candle);
+
+    // Wick (thin cylinder)
+    const wickGeometry = new THREE.CylinderGeometry(0.02 * scale, 0.02 * scale, 0.3 * scale, 6);
+    const wickMaterial = new THREE.MeshBasicMaterial({ color: '#1a1a1a' });
+    const wick = new THREE.Mesh(wickGeometry, wickMaterial);
+    wick.position.y = 2.15 * scale;
+    group.add(wick);
+
+    // Outer glow sphere (large, soft)
+    const glowOuterGeometry = new THREE.SphereGeometry(1.0 * scale, 16, 16);
+    const glowOuterMaterial = new THREE.MeshBasicMaterial({
+      color: '#ff4400',
+      transparent: true,
+      opacity: 0.2,
+    });
+    const glowOuter = new THREE.Mesh(glowOuterGeometry, glowOuterMaterial);
+    glowOuter.position.y = 2.6 * scale;
+    group.add(glowOuter);
+
+    // Middle glow sphere
+    const glowMiddleGeometry = new THREE.SphereGeometry(0.6 * scale, 16, 16);
+    const glowMiddleMaterial = new THREE.MeshBasicMaterial({
+      color: '#ff6600',
+      transparent: true,
+      opacity: 0.4,
+    });
+    const glowMiddle = new THREE.Mesh(glowMiddleGeometry, glowMiddleMaterial);
+    glowMiddle.position.y = 2.6 * scale;
+    group.add(glowMiddle);
+
+    // Flame outer (orange)
+    const flameOuterGeometry = new THREE.SphereGeometry(0.3 * scale, 8, 8);
+    flameOuterGeometry.scale(1, 2, 1);
+    const flameOuterMaterial = new THREE.MeshBasicMaterial({
+      color: '#ff6600',
+      transparent: true,
+      opacity: 0.9,
+    });
+    const flameOuter = new THREE.Mesh(flameOuterGeometry, flameOuterMaterial);
+    flameOuter.position.y = 2.6 * scale;
+    group.add(flameOuter);
+
+    // Flame inner core (bright yellow/white)
+    const flameInnerGeometry = new THREE.SphereGeometry(0.15 * scale, 8, 8);
+    flameInnerGeometry.scale(1, 2.5, 1);
+    const flameInnerMaterial = new THREE.MeshBasicMaterial({
+      color: '#ffffcc',
+      transparent: true,
+      opacity: 1,
+    });
+    const flameInner = new THREE.Mesh(flameInnerGeometry, flameInnerMaterial);
+    flameInner.position.y = 2.55 * scale;
+    group.add(flameInner);
+
+    // Point light for dynamic glow effect
+    const light = new THREE.PointLight('#ff9933', 2, 6);
+    light.position.y = 2.6 * scale;
+    group.add(light);
+
+    // Store data reference for click handling
+    group.userData = d;
+
+    return group;
   }, []);
 
   return (
@@ -93,31 +161,29 @@ function InteractiveGlobe({ pins = [], onPinClick }) {
         polygonSideColor={() => '#000000'}
         polygonStrokeColor={() => '#ffffff'}
         polygonAltitude={0.008}
-        // Heatmap points
-        pointsData={pins}
-        pointLat={d => d.lat}
-        pointLng={d => d.lng}
-        pointAltitude={getPointAltitude}
-        pointRadius={getPointRadius}
-        pointColor={heatmapColorFn}
-        pointsMerge={false}
-        pointLabel={d => d.label ? `
+        // Custom candle objects
+        objectsData={pins}
+        objectLat={d => d.lat}
+        objectLng={d => d.lng}
+        objectAltitude={0.01}
+        objectThreeObject={createCandle}
+        onObjectClick={(obj, event, coords) => onPinClick && onPinClick(obj)}
+        objectLabel={d => d.label ? `
           <div style="
             background: rgba(0, 10, 20, 0.9);
-            border: 1px solid ${heatmapColorFn(d)};
+            border: 1px solid #ff9933;
             border-radius: 4px;
             padding: 8px 12px;
             font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
             font-size: 12px;
-            color: ${heatmapColorFn(d)};
-            box-shadow: 0 0 20px ${heatmapColorFn(d)}40;
+            color: #ffcc66;
+            box-shadow: 0 0 20px rgba(255, 153, 51, 0.4);
             cursor: pointer;
           ">
             <div style="font-weight: bold;">${d.label}</div>
             ${d.description ? `<div style="opacity: 0.7; margin-top: 4px;">${d.description}</div>` : ''}
           </div>
         ` : null}
-        onPointClick={onPinClick}
         animateIn={true}
       />
     </div>
