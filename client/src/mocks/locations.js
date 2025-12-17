@@ -58,22 +58,13 @@ export const mockLocations = [
   },
 ];
 
-// Helper to transform mock data to globe pin format
+// Helper to transform mock data to globe pin format (candles)
 export const transformToGlobePins = (locations) => {
   return locations.map((loc) => ({
     lat: loc.lat,
     lng: loc.lng,
     label: loc.name,
     description: `Amount: $${loc.amount.toLocaleString()}`,
-    size: Math.max(0.5, loc.amount / 10000), // Scale size by amount
-    color: getColorByAmount(loc.amount),
+    amount: loc.amount,
   }));
-};
-
-// Color coding based on amount
-const getColorByAmount = (amount) => {
-  if (amount >= 20000) return "#ff4444"; // Red - high
-  if (amount >= 15000) return "#ffaa00"; // Orange - medium-high
-  if (amount >= 10000) return "#44ff44"; // Green - medium
-  return "#4488ff"; // Blue - low
 };
