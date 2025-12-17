@@ -1,5 +1,7 @@
+from __future__ import annotations
+
 import uuid
-from datetime import UTC, datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from app.config import Settings
 from app.core.exceptions import ContentFilteredError, RateLimitExceeded
@@ -83,7 +85,7 @@ class NoteService:
             city=city,
             lat=lat,
             lon=lon,
-            created_at=datetime.now(UTC),
+            created_at=datetime.now(timezone.utc),
             ip_hash=ip_hash,
         )
 

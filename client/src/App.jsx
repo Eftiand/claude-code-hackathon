@@ -1,34 +1,76 @@
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import InteractiveGlobe from './components/Globe';
 import UserModal from './components/UserModal';
-import { mockLocations, transformToGlobePins } from './mocks/locations';
+import { fetchNotePoints, createNote } from './api/notes';
 import './App.css';
 
 function App() {
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [userPins, setUserPins] = useState([]);
+  const [pins, setPins] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  const mockPins = transformToGlobePins(mockLocations);
-  const allPins = [...mockPins, ...userPins];
+  const loadPins = useCallback(async () => {
+    try {
+      setIsLoading(true);
+      setError(null);
+      const points = await fetchNotePoints();
+      // Transform API response to match globe pin format
+      const transformedPins = points.map((point) => ({
+        lat: point.lat,
+        lng: point.lng,
+        label: point.label,
+        description: point.label,
+        id: point.id,
+      }));
+      setPins(transformedPins);
+    } catch (err) {
+      console.error('Failed to load pins:', err);
+      setError(err.message);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
 
-  const handleAddPin = (userData) => {
-    const newPin = {
-      lat: userData.latitude,
-      lng: userData.longitude,
-      label: userData.name,
-      description: `${userData.city}, ${userData.country}`,
-      amount: 1,
-    };
-    setUserPins((prev) => [...prev, newPin]);
+  useEffect(() => {
+    loadPins();
+  }, [loadPins]);
+
+  const handleAddPin = async (userData) => {
+    try {
+      setError(null);
+      const noteData = {
+        name: userData.name || null,
+        message: userData.message,
+        lat: userData.latitude,
+        lon: userData.longitude,
+        city: userData.city || null,
+        country_code: null,
+        share_location: true,
+      };
+
+      await createNote(noteData);
+      // Reload pins to show the new one
+      await loadPins();
+    } catch (err) {
+      console.error('Failed to create note:', err);
+      setError(err.message);
+    }
   };
 
   const handlePinClick = (pin) => {
     console.log('Pin clicked:', pin);
-    // TODO: Add your desired click behavior here (e.g., open a detail modal)
   };
 
   return (
     <div className="app">
+      {error && (
+        <div className="error-banner">
+          {error}
+          <button onClick={() => setError(null)}>×</button>
+        </div>
+      )}
+
       <button
         className="add-pin-btn"
         onClick={() => setIsModalOpen(true)}
@@ -38,7 +80,11 @@ function App() {
         <span className="btn-text">Add Pin</span>
       </button>
 
-      <InteractiveGlobe pins={allPins} onPinClick={handlePinClick} />
+      {isLoading && pins.length === 0 && (
+        <div className="loading-indicator">Loading...</div>
+      )}
+
+      <InteractiveGlobe pins={pins} onPinClick={handlePinClick} />
 
       <UserModal
         isOpen={isModalOpen}

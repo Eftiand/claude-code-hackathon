@@ -3,6 +3,7 @@ import './UserModal.css';
 
 function UserModal({ isOpen, onClose, onConfirm }) {
   const [name, setName] = useState('');
+  const [message, setMessage] = useState('');
   const [address, setAddress] = useState('');
   const [selectedLocation, setSelectedLocation] = useState(null);
   const [suggestions, setSuggestions] = useState([]);
@@ -97,9 +98,10 @@ function UserModal({ isOpen, onClose, onConfirm }) {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (name.trim() && selectedLocation) {
+    if (message.trim() && selectedLocation) {
       onConfirm({
-        name: name.trim(),
+        name: name.trim() || null,
+        message: message.trim(),
         city: address,
         country: '',
         latitude: selectedLocation.latitude,
@@ -107,6 +109,7 @@ function UserModal({ isOpen, onClose, onConfirm }) {
       });
       // Reset form
       setName('');
+      setMessage('');
       setAddress('');
       setSelectedLocation(null);
       setSuggestions([]);
@@ -120,7 +123,7 @@ function UserModal({ isOpen, onClose, onConfirm }) {
     }
   };
 
-  const isValid = name.trim() && selectedLocation;
+  const isValid = message.trim() && selectedLocation;
 
   if (!isOpen) return null;
 
@@ -133,15 +136,29 @@ function UserModal({ isOpen, onClose, onConfirm }) {
         <h2 className="modal-title">Add Your Pin</h2>
         <form onSubmit={handleSubmit}>
           <div className="form-group">
-            <label htmlFor="name">Your Name</label>
+            <label htmlFor="name">Your Name (optional)</label>
             <input
               type="text"
               id="name"
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="Enter your name"
+              maxLength={60}
+            />
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="message">Message *</label>
+            <textarea
+              id="message"
+              value={message}
+              onChange={(e) => setMessage(e.target.value)}
+              placeholder="Leave a message for the world..."
+              maxLength={200}
+              rows={3}
               autoFocus
             />
+            <span className="char-count">{message.length}/200</span>
           </div>
 
           <div className="form-group">
