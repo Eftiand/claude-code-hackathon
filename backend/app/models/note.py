@@ -1,5 +1,7 @@
+from __future__ import annotations
+
 import uuid
-from datetime import UTC, datetime
+from datetime import datetime, timezone
 
 from sqlalchemy import Column, Index, String, text
 from sqlmodel import Field, SQLModel
@@ -31,7 +33,7 @@ class Note(SQLModel, table=True):
     lat: float | None = Field(default=None)
     lon: float | None = Field(default=None)
     created_at: datetime = Field(
-        default_factory=lambda: datetime.now(UTC),
+        default_factory=lambda: datetime.now(timezone.utc),
         index=True,
     )
     ip_hash: str = Field(

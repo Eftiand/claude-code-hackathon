@@ -1,5 +1,7 @@
+from __future__ import annotations
+
 import base64
-from datetime import UTC, datetime
+from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 
@@ -50,7 +52,7 @@ async def create_note(
             city=note_data.city,
             lat=note_data.lat,
             lon=note_data.lon,
-            created_at=datetime.now(UTC),
+            created_at=datetime.now(timezone.utc),
         )
 
     try:

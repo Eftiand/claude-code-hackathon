@@ -1,5 +1,7 @@
+from __future__ import annotations
+
 from functools import lru_cache
-from typing import Literal
+from typing import Literal, Union, List
 
 from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -30,7 +32,7 @@ class Settings(BaseSettings):
     ip_hash_salt: str = "change-this-secret-salt"
 
     # CORS
-    cors_origins: list[str] = ["http://localhost:5173", "http://localhost:3000"]
+    cors_origins: list[str] = ["http://localhost:5173", "http://localhost:5175", "http://localhost:3000"]
 
     # Rate Limiting
     rate_limit_requests: int = 5
