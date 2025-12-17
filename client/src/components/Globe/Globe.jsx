@@ -3,7 +3,7 @@ import Globe from 'react-globe.gl';
 import * as THREE from 'three';
 import './Globe.css';
 
-function InteractiveGlobe({ pins = [] }) {
+function InteractiveGlobe({ pins = [], onPinClick }) {
   const globeRef = useRef();
   const [countries, setCountries] = useState({ features: [] });
 
@@ -111,12 +111,13 @@ function InteractiveGlobe({ pins = [] }) {
             font-size: 12px;
             color: ${heatmapColorFn(d)};
             box-shadow: 0 0 20px ${heatmapColorFn(d)}40;
+            cursor: pointer;
           ">
             <div style="font-weight: bold;">${d.label}</div>
             ${d.description ? `<div style="opacity: 0.7; margin-top: 4px;">${d.description}</div>` : ''}
-            <div style="opacity: 0.6; margin-top: 4px; font-size: 10px;">Intensity: ${((d.size || 1) / 5 * 100).toFixed(0)}%</div>
           </div>
         ` : null}
+        onPointClick={onPinClick}
         animateIn={true}
       />
     </div>

@@ -15,12 +15,16 @@ function App() {
     const newPin = {
       lat: userData.latitude,
       lng: userData.longitude,
-      name: userData.name,
+      label: userData.name,
+      description: `${userData.city}, ${userData.country}`,
       amount: 1,
-      city: userData.city,
-      country: userData.country,
     };
     setUserPins((prev) => [...prev, newPin]);
+  };
+
+  const handlePinClick = (pin) => {
+    console.log('Pin clicked:', pin);
+    // TODO: Add your desired click behavior here (e.g., open a detail modal)
   };
 
   return (
@@ -34,7 +38,7 @@ function App() {
         <span className="btn-text">Add Pin</span>
       </button>
 
-      <InteractiveGlobe pins={allPins} />
+      <InteractiveGlobe pins={allPins} onPinClick={handlePinClick} />
 
       <UserModal
         isOpen={isModalOpen}
