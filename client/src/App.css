@@ -8,4 +8,44 @@
   width: 100vw;
   height: 100vh;
   overflow: hidden;
+  position: relative;
+}
+
+.add-pin-btn {
+  position: fixed;
+  top: 24px;
+  right: 24px;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 20px;
+  background: linear-gradient(135deg, #4f9cf9 0%, #6366f1 100%);
+  border: none;
+  border-radius: 12px;
+  color: #fff;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(79, 156, 249, 0.3);
+}
+
+.add-pin-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(79, 156, 249, 0.4);
+}
+
+.add-pin-btn:active {
+  transform: translateY(0);
+}
+
+.btn-icon {
+  font-size: 20px;
+  font-weight: 300;
+  line-height: 1;
+}
+
+.btn-text {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
