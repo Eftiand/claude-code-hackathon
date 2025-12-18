@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- Candle base -->
+  <rect x="24" y="32" width="16" height="24" rx="2" fill="#f5f5dc"/>
+  <rect x="22" y="54" width="20" height="4" rx="1" fill="#ddd5c0"/>
+
+  <!-- Wick -->
+  <rect x="31" y="26" width="2" height="8" fill="#333"/>
+
+  <!-- Flame outer -->
+  <ellipse cx="32" cy="18" rx="8" ry="14" fill="#FF8C00"/>
+
+  <!-- Flame middle -->
+  <ellipse cx="32" cy="20" rx="5" ry="10" fill="#FFB347"/>
+
+  <!-- Flame inner -->
+  <ellipse cx="32" cy="22" rx="3" ry="6" fill="#FFFACD"/>
+
+  <!-- Glow effect -->
+  <circle cx="32" cy="20" r="16" fill="url(#glow)" opacity="0.4"/>
+
+  <defs>
+    <radialGradient id="glow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#FFB347"/>
+      <stop offset="100%" stop-color="#FFB347" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+</svg>
